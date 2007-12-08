@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 # vim: set sw=2 expandtab : #
+# Master version is at https://developer.berlios.de/projects/games-hack/
 
 package Games::Hack::Patch::i686;
 
