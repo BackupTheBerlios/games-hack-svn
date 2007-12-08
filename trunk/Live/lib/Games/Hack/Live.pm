@@ -13,7 +13,7 @@ require Exporter;
 @EXPORT = qw(Run);
 
 
-$VERSION=0.406;
+$VERSION=0.407;
 
 
 # Client program name
@@ -220,8 +220,8 @@ sub GDBStart
 
 
   GDBSync($gdb);
-  GDBSend("attach $prg_pid");
   GDBSend("set pagination off");
+  GDBSend("attach $prg_pid");
 
   CleanUp();
 
