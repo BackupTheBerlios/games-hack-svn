@@ -1406,14 +1406,11 @@ So this should maybe get bound to a MD5 of the binary or some such.
 
 =item Binary patching, program start
 
-Instead of simply outputting commands for C<gdb> to patch the program, the 
-binary itself could be patched (to a new name); then this binary could 
-simply be started instead of the other one. (Would avoid needing to check 
-the MD5 of the binary.)
-
-Or a shell script should be printed, that would take care of patching the 
-binary (via C<gdb>) itself - so only the shell script would 
-have to be started. (Could check for the MD5 of the executable, too!)
+Simply patching the program is already possibly; another way would be to
+print a shell script, that took care of patching the 
+binary (via C<gdb>) itself - so this script would 
+have to be started instead of the original executable.
+(Should check for the same executable - MD5/SHA-256 or whatever.)
 
 A further idea might be to export a shell script that uses 
 C<echo>/C<dd>/C<perl> or suchlike to patch the binary in the filesystem.
