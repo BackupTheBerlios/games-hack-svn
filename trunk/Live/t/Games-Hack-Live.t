@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 #########################
 
 use Test::More tests => 1;
@@ -10,8 +11,7 @@ use Expect;
 # it should be able to find a memory location, and change it.
 
 ok(1, "start");
-
-exit;
+#exit;
 
 $client = new Expect;
 
@@ -32,12 +32,12 @@ for $run (1 .. 10)
 	$client->print("find " . ($var-1.0) . " " . ($var+1.0) . "\n");
 	$client->expect(1, [ qr(--->), sub { } ], );
 	$last=$client->before;
-#	print STDERR "$var... $last\n";
+	print STDERR "$var... $last\n";
 }
 diag("Loop finished");
 
 
-$last=$client->before;
+#$last=$client->before;
 print STDERR "$last\n";
 ($adr, $count)=($last =~ /Most wanted:\s+(\w+)\((\d+)\)/);
 is($adr, "No matches found?");

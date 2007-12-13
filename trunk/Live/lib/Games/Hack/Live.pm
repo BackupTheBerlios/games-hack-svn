@@ -716,7 +716,7 @@ sub KillWriteCallBack
 # When we get here, the program has already stopped.
   $is_running=0;
 
-  ($old) = $exp->before() =~ m#Old value = (\d+)#;
+  ($old) = $exp->after() =~ m#Old value = (\d+)#;
 
   $exp->clear_accum();
   $exp->print_log_file("### Got callback!\n");
