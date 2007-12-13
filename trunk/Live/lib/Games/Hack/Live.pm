@@ -729,6 +729,10 @@ sub KillWriteCallBack
     if ($old);
 
   GDBSend($exp, "info program", GDBmatches(0)); 
+  $quit=1,return 
+    if ($exp->before =~ 
+        m#program being debugged is not being run.#i);
+
   $exp->before =~ m#Program stopped at ((0x)?[0-9a-f]+)#i;
   $adr=oct($1);
   $exp->print_log_file("### Program at $adr!\n");
