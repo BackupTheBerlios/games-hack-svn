@@ -292,7 +292,6 @@ sub GDBPrompt
   $obj=ref($others[0]) eq "Expect" ? shift(@others) : $gdb;
   @others=GDBmatches(1) if !@others;
   if (!$obj->expect($TIMEOUT, @others))
-
   {
     $obj->print_log_file(">>> NO MATCH ... expected $gdb_prompt_delimiter, Continuing, or @others\n");
     $obj->print_log_file("got ", $obj->clear_accum());
