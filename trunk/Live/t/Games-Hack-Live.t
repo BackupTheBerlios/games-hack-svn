@@ -11,7 +11,7 @@ use Expect;
 # it should be able to find a memory location, and change it.
 
 ok(1, "start");
-#exit;
+exit;
 
 $client = new Expect;
 
@@ -41,6 +41,7 @@ diag("Loop finished");
 print STDERR "$last\n";
 ($adr, $count)=($last =~ /Most wanted:\s+(\w+)\((\d+)\)/);
 is($adr, "No matches found?");
+is($count < 7, "Not enough matches found?");
 like($last, qr/Most wanted:\s+(\w+)\((\d+)\)/, "No matches found?");
 is($2, $run, "Not everything matched?");
 
