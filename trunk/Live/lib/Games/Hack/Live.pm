@@ -1464,6 +1464,11 @@ Patches are welcome.
 Ph. Marek <pmarek@cpan.org>
 
 
+=head1 HOMEPAGE
+
+The homepage is at http://games-hack.berlios.de/.
+
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2007 by Ph. Marek;
