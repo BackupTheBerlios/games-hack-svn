@@ -1,6 +1,6 @@
 Revision history for Perl extension Games::Hack::Live.
 
-0.
+0.5
 	- small bugfix for applications with lots of libraries.
 	- Bugfix for killwrites - keep *address at old value.
 	- Stop script if debuggee exits
