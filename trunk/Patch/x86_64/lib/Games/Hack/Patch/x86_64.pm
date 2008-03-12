@@ -4,7 +4,7 @@
 
 package Games::Hack::Patch::x86_64;
 
-$VERSION=0.12;
+$VERSION=0.13;
 
 require Exporter;
 @ISA = qw(Exporter);
@@ -42,7 +42,7 @@ sub GetNOP
     $adr_start += 3;
   }
 ### Integer move or direct modification
-  elsif ($disass =~ m#^(mov|or|and)#)
+  elsif ($disass =~ m#^(mov|or|and|add|sub|xor)#)
   {
 # done by jump.
   }
