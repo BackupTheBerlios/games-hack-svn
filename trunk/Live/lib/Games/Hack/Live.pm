@@ -1059,9 +1059,11 @@ sub String2Bin
     push @hex, map { sprintf("\\x%02X", $_); } @$chars;
   }
 
+# "." is not *any* character, sadly.
+# So we use "\C".
   return (
     length($stg1),
-    join("", "(?-xism:", ('.' x $to_chop), @hex, ")" ) 
+    join("", "(?-xism:", ("\\C" x $to_chop), @hex, ")" ) 
       );
 }
 
