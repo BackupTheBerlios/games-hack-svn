@@ -4,7 +4,7 @@
 
 package Games::Hack::Patch::i686;
 
-$VERSION=0.5;
+$VERSION=0.52;
 
 require Exporter;
 @ISA = qw(Exporter);
@@ -21,7 +21,7 @@ sub GetNOP
   $binary="";
 
 ### Floating point store? Stores always %ST(0).
-  if ($disass =~ m#^f[bi]?st(p)?s? #)
+  if ($disass =~ m#^f[bi]?st(p)?[sl]? #)
   {
     if ($1)
     {
