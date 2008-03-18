@@ -671,7 +671,8 @@ sub SaveMem
 {
   my($start, $end, $dir)=@_;
 
-  SaveMemtoFile($start, $end, "$dir/$start-$end");
+  SaveMemtoFile($start, $end, 
+      sprintf("%s/0x%8X-0x%8X", $dir, $start, $end));
 }
 
 
