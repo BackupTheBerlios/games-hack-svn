@@ -981,7 +981,7 @@ sub String2Bin
 
   return undef unless $stg1;
 
-  # integer type?
+  # Only a single value given?
   if (!$range)
   {
     return (

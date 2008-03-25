@@ -1,72 +1,114 @@
 #!/usr/bin/perl
 #########################
 
-use Test::More tests => 1;
+use Test::More;
 use Expect;
 
 #########################
+@patients=("double", "long");
 
+# It seems that ok() cannot be used in a loop.
+# So I had to change the "ok" in the middle to "fail() if".
+plan "tests" => 1+@patients;
 
-# The Games::Hack::Live script is used to examine *this* script;
-# it should be able to find a memory location, and change it.
+sub Diag {
+#diag(@_);
+} 
 
+#########################
 ok(1, "start");
-exit;
 
-$client = new Expect;
+our $current_val;
 
-$client->raw_pty(1);
-$client->spawn("hack-live -p$$ 2>&1", ()) 
-or die "Cannot spawn Games::Hack::Live: $!\n";
+$slave_getvalue= [ qr(^={5,} NEW VALUE: (\S+)), 
+	sub { 
+		my($self)=@_;
+		$current_val=($self->matchlist())[0]; 
+	} 
+];
 
+
+for $patient (@patients)
+{
+	Diag("Going for $patient");
+
+	$slave=new Expect;
+	$slave->raw_pty(1);
+	$slave->spawn("t/test-$patient.pl", ())
+		or die "Cannot spawn test-$patient.pl";
+
+	$client = new Expect;
+	$client->raw_pty(1);
+	$client->spawn("hack-live -p" . $slave->pid, ())
+		or die "Cannot spawn Games::Hack::Live: $!\n";
 
 # Testing here doesn't work. It seems that perl doesn't keep the scalar at 
-# the same memory location, but moves it around. Will have to be done via a 
-# C program. TODO
+# the same memory location, but moves it around. 
+# Strangely that works if the perl script is run separately - does the 
+# Test:: framework something like eval()?
 
-$var=2371.0;
-$ref=\$var;
-for $run (1 .. 10)
-{
-	$$ref += 113/$run;
-	$client->print("find " . ($var-1.0) . " " . ($var+1.0) . "\n");
-	$client->expect(1, [ qr(--->), sub { } ], );
-	$last=$client->before;
-	print STDERR "$var... $last\n";
-}
-diag("Loop finished");
-
-
-#$last=$client->before;
-print STDERR "$last\n";
-($adr, $count)=($last =~ /Most wanted:\s+(\w+)\((\d+)\)/);
-is($adr, "No matches found?");
-is($count < 7, "Not enough matches found?");
-like($last, qr/Most wanted:\s+(\w+)\((\d+)\)/, "No matches found?");
-is($2, $run, "Not everything matched?");
-
-diag("Address is $1");
+	$client->print("\n\n");
+	$client->expect(4, [ qr(^---), ] );
 
 
 
-{ 
-	use integer;
-	$var=71;
-	for $run (1 .. 10)
+	$loop_max=5;
+# Take a few values, then try to inhibit changes.
+	for (1 .. $loop_max)
 	{
-		$var += $run;
-		$client->print("find $var\n");
+		$current_val=0;
+		$slave->expect(1, $slave_getvalue);
+
+		die "unidentifiable output\n" unless $current_val;
+
+		Diag("got current value as $current_val\n");
+		$client->print(
+				$current_val =~ m#\.# ?
+				"find ($patient) ". ($current_val-1) ." ". ($current_val+1) ."\n" :
+				"find ($patient) $current_val\n");
 		$client->expect(1, [ qr(--->), sub { } ], );
-$last=$client->before;
-#print STDERR "$last\n";
+		$last=$client->before;
+#		print STDERR $last;
+		$last =~ /Most wanted:\s+(.*)/;
+#		print STDERR "==== has $current_val: $1\n";
+
+		$slave->print("\n");
 	}
-	diag("Loop finished");
+
+
+	$last=$client->before;
+	($adr, $count)=($last =~ /Most wanted:\s+(\w+)\((\d+)\)/);
+	Diag("got address $adr, with $count matches.");
+	fail("No address found?") unless $adr;
+# we allow a single bad value.
+	fail("Not enough matches found?") unless ($count >= $loop_max-1);
+
+
+	Diag("Trying to kill writes.\n");
+
+	$client->clear_accum;
+	$client->print("killwrites $adr\n");
+	$client->expect(1, [ qr(--->), sub { } ], );
+	$slave->print("\n");
+	$slave->print("\n");
+
+	$slave->clear_accum;
+	$slave->print("\n");
+	$slave->expect(1, $slave_getvalue);
+	$old=$current_val;
+	$slave->print("\n");
+	$slave->expect(1, $slave_getvalue);
+	$new=$current_val;
+
+	Diag("old was $old, new is $new");
+	ok($old == $new ,"changed value?");
+
+	$client->print("kill\n\n");
+	$client->hard_close;
+	$slave->hard_close;
+
+	Diag("$patient done\n");
 }
-
-
-#ok(1, "aga");
-#pass("aa");
-#fail("aa");
 
 exit;
 
