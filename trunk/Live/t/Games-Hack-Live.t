@@ -15,6 +15,8 @@ sub Diag {
 #diag(@_);
 } 
 
+$Expect::Log_Stdout=0;
+
 #########################
 ok(1, "start");
 
