@@ -6,11 +6,10 @@ use integer;
 
 $var=526543;
 $ref=\$var;
-for $run (1 .. 10)
+do
 {
-	$$ref += 113+$run;
+	$$ref += 113+ ++$run;
 	print "========= NEW VALUE: $var\n";
-	scalar(<STDIN>);
-}
+} until (<STDIN> =~ /quit/);
 exit;
 
