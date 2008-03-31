@@ -9,7 +9,7 @@ use Expect;
 
 # It seems that ok() cannot be used in a loop.
 # So I had to change the "ok" in the middle to "fail() if".
-plan "tests" => 1+@patients;
+plan "tests" => 1 + @patients*6;
 
 sub Diag {
 #diag(@_);
@@ -22,12 +22,25 @@ ok(1, "start");
 
 our $current_val;
 
-$slave_getvalue= [ qr(^={5,} NEW VALUE: (\S+)), 
-	sub { 
-		my($self)=@_;
-		$current_val=($self->matchlist())[0]; 
-	} 
-];
+sub slave_getvalue
+{
+	my($slave)=@_;
+
+	$slave->print("\n");
+	$slave->expect(1, 
+			[ qr(^={5,} NEW VALUE: (\S+)), sub 
+				{ 
+					my($self)=@_;
+					# Allow the child to print an expression, so that the values to 
+					# be found isn't left on the stack (for printf() or similar).
+					$current_val=eval(($self->matchlist())[0]); 
+				} 
+			]
+		);
+
+	return $current_val;
+}
+
 
 
 for $patient (@patients)
@@ -59,21 +72,21 @@ for $patient (@patients)
 # Take a few values, then try to inhibit changes.
 	for $loop (1 .. $loop_max)
 	{
-		$current_val=0;
-		$slave->expect(1, $slave_getvalue);
-
-		die "unidentifiable output\n" unless $current_val;
+		slave_getvalue($slave);
+		last unless $current_val;
 
 		Diag("got current value as $current_val\n");
 		$client->print(
 				$current_val =~ m#\.# ?
 				"find ($patient) ". ($current_val-1) ." ". ($current_val+1) ."\n" :
 				"find ($patient) $current_val\n");
-		$client->expect(1, [ qr(--->), sub { } ], );
+		$client->expect(4, [ qr(--->), sub { } ], );
 
 		$last=$client->before;
 		($wanted)=($last =~ /Most wanted:\s+(\w.*)/);
-		@matches=grep($_ !~ /^(0x0+)?0$/,$wanted =~ /(\w+)\((\d+)\)/g);
+		last unless $wanted;
+
+		%matches=@matches=grep($_ !~ /^(0x0+)?0$/,$wanted =~ /(\w+)\((\d+)\)/g);
 #		print STDERR "$loop: $wanted\n==== has $current_val: ", 
 #		join(" ", @matches),"\n", 0+@matches, $matches[1] > $matches[3],"\n";
 
@@ -81,17 +94,22 @@ for $patient (@patients)
 		last if ($loop > $loop_min) && 
 			(@matches == 2 ||
 			 $matches[1] > $matches[3]);
-
-		$slave->print("\n");
 	}
 
+	ok($current_val>0, "Identifiable output");
+	ok($wanted, "Got list of addresses");
 
-	($adr, $count)=@matches;
+
+	ok(@matches==2, 
+			"matching addresses: 1 wanted; got " . 
+			join(" ", sort keys %matches));
+
+	($adr, $count)=each %matches;
 	$last=$client->before;
 	Diag("got address $adr, with $count matches.");
-	fail("No address found?") unless $adr;
+	ok($adr, "address found");
 # we allow a single bad value.
-	fail("Not enough matches found?") unless ($count >= $loop-1);
+	ok($count >= $loop_min, "Not enough matches found?");
 
 
 	Diag("Trying to kill writes.\n");
@@ -99,18 +117,13 @@ for $patient (@patients)
 	$client->print("killwrites $adr\n");
 	$client->clear_accum;
 	$client->expect(1, [ qr(--->), sub { } ], );
-	$slave->print("\n");
-	$slave->clear_accum;
-	$slave->print("\n");
-	$slave->expect(1, $slave_getvalue);
 
-	$slave->print("\n");
+	slave_getvalue($slave);
+	slave_getvalue($slave);
 	$slave->clear_accum;
-	$slave->expect(1, $slave_getvalue);
-	$old=$current_val;
-	$slave->print("\n");
-	$slave->expect(1, $slave_getvalue);
-	$new=$current_val;
+
+	$old=slave_getvalue($slave);
+	$new=slave_getvalue($slave);
 
 	Diag("old was $old, new is $new");
 	ok($old == $new ,"changed value ($old == $new)?");
