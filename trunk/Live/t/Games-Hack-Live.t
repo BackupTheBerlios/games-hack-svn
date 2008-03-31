@@ -54,9 +54,10 @@ for $patient (@patients)
 
 
 
-	$loop_max=5;
+	$loop_min=5;
+	$loop_max=17;
 # Take a few values, then try to inhibit changes.
-	for (1 .. $loop_max)
+	for $loop (1 .. $loop_max)
 	{
 		$current_val=0;
 		$slave->expect(1, $slave_getvalue);
@@ -69,33 +70,42 @@ for $patient (@patients)
 				"find ($patient) ". ($current_val-1) ." ". ($current_val+1) ."\n" :
 				"find ($patient) $current_val\n");
 		$client->expect(1, [ qr(--->), sub { } ], );
+
 		$last=$client->before;
-#		print STDERR $last;
-		$last =~ /Most wanted:\s+(.*)/;
-#		print STDERR "==== has $current_val: $1\n";
+		($wanted)=($last =~ /Most wanted:\s+(\w.*)/);
+		@matches=grep($_ !~ /^(0x0+)?0$/,$wanted =~ /(\w+)\((\d+)\)/g);
+#		print STDERR "$loop: $wanted\n==== has $current_val: ", 
+#		join(" ", @matches),"\n", 0+@matches, $matches[1] > $matches[3],"\n";
+
+# Stop testing if there's only a single match, or a single best match.
+		last if ($loop > $loop_min) && 
+			(@matches == 2 ||
+			 $matches[1] > $matches[3]);
 
 		$slave->print("\n");
 	}
 
 
+	($adr, $count)=@matches;
 	$last=$client->before;
-	($adr, $count)=($last =~ /Most wanted:\s+(\w+)\((\d+)\)/);
 	Diag("got address $adr, with $count matches.");
 	fail("No address found?") unless $adr;
 # we allow a single bad value.
-	fail("Not enough matches found?") unless ($count >= $loop_max-1);
+	fail("Not enough matches found?") unless ($count >= $loop-1);
 
 
 	Diag("Trying to kill writes.\n");
 
-	$client->clear_accum;
 	$client->print("killwrites $adr\n");
+	$client->clear_accum;
 	$client->expect(1, [ qr(--->), sub { } ], );
 	$slave->print("\n");
-	$slave->print("\n");
-
 	$slave->clear_accum;
 	$slave->print("\n");
+	$slave->expect(1, $slave_getvalue);
+
+	$slave->print("\n");
+	$slave->clear_accum;
 	$slave->expect(1, $slave_getvalue);
 	$old=$current_val;
 	$slave->print("\n");
@@ -103,8 +113,9 @@ for $patient (@patients)
 	$new=$current_val;
 
 	Diag("old was $old, new is $new");
-	ok($old == $new ,"changed value?");
+	ok($old == $new ,"changed value ($old == $new)?");
 
+	$slave->print("quit\n");
 	$client->print("kill\n\n");
 	$client->hard_close;
 	$slave->hard_close;
